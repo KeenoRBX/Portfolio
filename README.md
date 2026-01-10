@@ -1,3 +1,4 @@
+-- Main Module
 local Gift = {}
 Gift.__index = Gift
 
@@ -135,3 +136,186 @@ end
 return Gift
 
 	---------++++++-------------++++
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	-------------------------------------------------------------------------------------------------
+	Server Code
+	-- =========================
+-- SERVICES
+-- =========================
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+-- =========================
+-- MODULES
+-- =========================
+local ValueGifts = require(
+	ReplicatedStorage.GiftSystem.IncreaseValue.ValueGifts
+)
+
+local chooseFunction = require(
+	ReplicatedStorage.GiftSystem.IncreaseValue.ValueGifts.chooseFunction
+)
+
+local PotionSystem = require(
+	ReplicatedStorage.modules.PotionSystem.PotionSystem
+)
+
+-- =========================
+-- REMOTES
+-- =========================
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local UsePotion = Remotes:WaitForChild("UsePotion")
+local GetClick = Remotes:WaitForChild("getclick")
+local GetBoolChanged = Remotes:WaitForChild("getboolchanged")
+local PurchaseAll = Remotes:WaitForChild("purchaseallgifts")
+
+-- =========================
+-- USE POTION
+-- =========================
+UsePotion.OnServerEvent:Connect(function(player, potionValue)
+	if not potionValue
+		or not potionValue:IsDescendantOf(player:WaitForChild("PotionFolder")) then
+		warn("you cant use potion")
+		return
+	end
+
+	if potionValue.Value <= 0 then return end
+
+	potionValue.Value -= 1
+	PotionSystem.PotionHandler(player, potionValue.Name)
+end)
+
+-- =========================
+-- BOOL GIFT STATE
+-- =========================
+GetBoolChanged.OnServerEvent:Connect(function(player, giftName, value)
+	local folder = player:FindFirstChild("GiftsFolder")
+	local gift = folder and folder:FindFirstChild(giftName)
+	if gift then
+		gift.Value = value
+	end
+end)
+
+-- =========================
+-- CLICK / REWARD
+-- =========================
+GetClick.OnServerEvent:Connect(function(player, amount, kind, multName)
+	local multValue = 1
+
+	if multName then
+		local multFolder = player:FindFirstChild("Multipliers")
+		local mult = multFolder and multFolder:FindFirstChild(multName)
+		if mult then
+			multValue = mult.Value
+		end
+	end
+
+	-- sempre passa o VALOR NUMÉRICO
+	chooseFunction(player, amount, kind, multValue)
+end)
+
+-- =========================
+-- DEV PRODUCT (PURCHASE ALL)
+-- =========================
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, wasPurchased)
+	if not wasPurchased then return end
+
+	local player = Players:GetPlayerByUserId(userId)
+	if not player then return end
+
+	if productId ~= 3478654682 then return end
+
+	local giftsFolder = player:FindFirstChild("GiftsFolder")
+	if not giftsFolder then return end
+
+	for _, gift in ipairs(giftsFolder:GetChildren()) do
+		if gift:IsA("BoolValue") then
+			gift.Value = true
+			PurchaseAll:FireClient(player, gift.Name)
+		end
+	end
+end)
+
+-- =========================
+-- PLAYER ADDED
+-- =========================
+Players.PlayerAdded:Connect(function(player)
+
+	-- Gifts
+	local giftsFolder = Instance.new("Folder")
+	giftsFolder.Name = "GiftsFolder"
+	giftsFolder.Parent = player
+
+	for giftName in pairs(ValueGifts) do
+		local b = Instance.new("BoolValue")
+		b.Name = giftName
+		b.Value = false
+		b.Parent = giftsFolder
+	end
+
+	-- Multipliers
+	local multFolder = Instance.new("Folder")
+	multFolder.Name = "Multipliers"
+	multFolder.Parent = player
+
+	local cashMult = Instance.new("NumberValue")
+	cashMult.Name = "CashMult"
+	cashMult.Value = 1
+	cashMult.Parent = multFolder
+
+	local winsMult = Instance.new("NumberValue")
+	winsMult.Name = "WinsMult"
+	winsMult.Value = 1
+	winsMult.Parent = multFolder
+
+	-- Potions
+	local potionFolder = Instance.new("Folder")
+	potionFolder.Name = "PotionFolder"
+	potionFolder.Parent = player
+
+	local cashPotion = Instance.new("IntValue")
+	cashPotion.Name = "2x Cash"
+	cashPotion.Value = 1
+	cashPotion.Parent = potionFolder
+
+	-- Leaderstats (exemplo)
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local cash = Instance.new("IntValue")
+	cash.Name = "Cash"
+	cash.Value = 0
+	cash.Parent = leaderstats
+
+	local wins = Instance.new("IntValue")
+	wins.Name = "Wins"
+	wins.Value = 0
+	wins.Parent = leaderstats
+end)
+
+
+
+
+
+
+
