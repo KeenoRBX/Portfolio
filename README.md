@@ -3,6 +3,10 @@ Gift.__index = Gift
 local function LogActivity(level, message)
 	print(string.format("[%s] [GIFT_SYSTEM_LOG] %s: %s", os.date("%X"), level, tostring(message)))
 end
+
+
+
+
 function Gift.new(giftName, config, giftsFolder, rewardsFrames, remotes)
 	LogActivity("DEBUG", "Iniciando construtor: " .. tostring(giftName))
 	local self = setmetatable({}, Gift)
@@ -40,6 +44,10 @@ function Gift.new(giftName, config, giftsFolder, rewardsFrames, remotes)
 	self.IsInitializing = false
 	return self
 end
+
+
+
+
 function Gift:GetInternalStatus()
 	local status = {
 		active = self.CooldownThread ~= nil,
@@ -58,12 +66,22 @@ function Gift:ValidateIntegrity()
 	end
 	return true
 end
+
+
+
 function Gift:SyncMetadata(key, value)
 	if self.Metadata[key] ~= nil then
 		self.Metadata[key] = value
 		self.Metadata.LastUpdate = os.time()
 	end
 end
+
+
+
+
+
+
+
 function Gift:FormatTime(seconds)
 	local total_seconds = tonumber(seconds) or 0
 	local h = math.floor(total_seconds / 3600)
@@ -83,6 +101,9 @@ function Gift:ProcessPotionReward(player)
 	end
 	return false
 end
+
+
+
 function Gift:ProcessClickReward()
 	local amount = self.Config.amount or 0
 	local tipo = self.Config.tipo or "Default"
@@ -92,12 +113,17 @@ function Gift:ProcessClickReward()
 		self.Remotes.getclick:FireServer(amount, tipo)
 	end
 end
+
+
+
 function Gift:StopCooldown()
 	if self.CooldownThread ~= nil then
 		task.cancel(self.CooldownThread)
 		self.CooldownThread = nil
 	end
 end
+
+
 function Gift:StartCooldown()
 	if self.CollectedLocal == true then return end
 	if not self:ValidateIntegrity() then return end
@@ -123,6 +149,9 @@ function Gift:StartCooldown()
 		self:StopCooldown()
 	end)
 end
+
+
+
 function Gift:UpdateState()
 	if not self:ValidateIntegrity() then return end
 	if self.CollectedLocal == true then
@@ -136,12 +165,18 @@ function Gift:UpdateState()
 		end
 	end
 end
+
+
+
 function Gift:SecureRemoteInvocator(remoteName, ...)
 	local remote = self.Remotes[remoteName]
 	if remote then
 		remote:FireServer(...)
 	end
 end
+
+
+
 function Gift:Collect()
 	if self.CollectedLocal then return end
 	if not self.GiftValue or self.GiftValue.Value == false then return end
